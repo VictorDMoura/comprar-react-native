@@ -36,14 +36,41 @@ async function save(items: ItemStorage[]): Promise<void> {
 }
 
 async function add(newItem: ItemStorage): Promise<ItemStorage[]> {
-    const items = await get();
-    const updatedItems = items.concat(newItem);
-    await save(updatedItems);
-    return updatedItems;
+  const items = await get();
+  const updatedItems = items.concat(newItem);
+  await save(updatedItems);
+  return updatedItems;
+}
+
+async function remove(itemId: string): Promise<ItemStorage[]> {
+  const items = await get();
+  const updatedItems = items.filter((item) => item.id !== itemId);
+  await save(updatedItems);
+  return updatedItems;
+}
+
+async function update(updatedItem: ItemStorage): Promise<ItemStorage[]> {
+  const items = await get();
+  const updatedItems = items.map((item) =>
+    item.id === updatedItem.id ? updatedItem : item,
+  );
+  await save(updatedItems);
+  return updatedItems;
+}
+
+async function clear(): Promise<void> {
+  try {
+    await AsyncStorage.removeItem(ITEMS_STORAGE_KEY);
+  } catch (error) {
+    throw new Error("CLEAR_ITEMS: " + error);
+  }
 }
 
 export const itemsStorage = {
   get,
   getByStatus,
-  add
+  add,
+  remove,
+  update,
+  clear,
 };

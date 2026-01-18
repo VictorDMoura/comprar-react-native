@@ -34,8 +34,9 @@ export function Home() {
     };
 
     await itemsStorage.add(newItem);
-    await itemsByStatus();
 
+    setFilter(FilterStatus.PENDING);
+    await itemsByStatus();
     Alert.alert("Adicionar", `Adicionado ${description} com sucesso!`);
     setDescription("");
   }
@@ -47,6 +48,16 @@ export function Home() {
     } catch (error) {
       console.log(error);
       Alert.alert("Erro", "Não foi possível carregar os itens.");
+    }
+  }
+
+  async function handleClear() {
+    try {
+      await itemsStorage.clear();
+      itemsByStatus();
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Erro", "Não foi possível limpar os itens.");
     }
   }
 
@@ -78,7 +89,7 @@ export function Home() {
             />
           ))}
 
-          <TouchableOpacity style={styles.clearButton}>
+          <TouchableOpacity style={styles.clearButton} onPress={handleClear}>
             <Text style={styles.clearText}>Limpar</Text>
           </TouchableOpacity>
         </View>
@@ -89,8 +100,20 @@ export function Home() {
           renderItem={({ item }) => (
             <Item
               data={item}
-              onStatus={() => console.log("mudar o status")}
-              onRemove={() => console.log("remover")}
+              onStatus={() =>
+                itemsStorage
+                  .update({
+                    ...item,
+                    status:
+                      item.status === FilterStatus.PENDING
+                        ? FilterStatus.DONE
+                        : FilterStatus.PENDING,
+                  })
+                  .then(() => itemsByStatus())
+              }
+              onRemove={() =>
+                itemsStorage.remove(item.id).then(() => itemsByStatus())
+              }
             />
           )}
           showsVerticalScrollIndicator={false}
