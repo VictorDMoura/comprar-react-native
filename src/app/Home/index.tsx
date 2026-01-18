@@ -1,7 +1,7 @@
 import {
+  Alert,
   FlatList,
   Image,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -13,30 +13,46 @@ import { Input } from "@/components/Input";
 import { Filter } from "@/components/Filter";
 import { FilterStatus } from "@/types/FilterStatus";
 import { Item } from "@/components/Item";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { itemsStorage, ItemStorage } from "@/storage/itemsStorage";
 
 const FILTER_STATUS: FilterStatus[] = [FilterStatus.PENDING, FilterStatus.DONE];
-const ITEMS = [
-  {
-    id: "1",
-    status: FilterStatus.DONE,
-    description: "1 pacote de café",
-  },
-  {
-    id: "2",
-    status: FilterStatus.PENDING,
-    description: "3 pacotes de macarrão",
-  },
-  {
-    id: "3",
-    status: FilterStatus.PENDING,
-    description: "3 cebolas",
-  },
-];
 
 export function Home() {
   const [filter, setFilter] = useState(FilterStatus.PENDING);
+  const [items, setItems] = useState<ItemStorage[]>([]);
   const [description, setDescription] = useState("");
+
+  async function handleAdd() {
+    if (!description.trim()) {
+      return Alert.alert("Adicionar", "Informe a descrição para adicionar.");
+    }
+    const newItem = {
+      id: new Date().getTime().toString(),
+      description: description,
+      status: FilterStatus.PENDING,
+    };
+
+    await itemsStorage.add(newItem);
+    await itemsByStatus();
+
+    Alert.alert("Adicionar", `Adicionado ${description} com sucesso!`);
+    setDescription("");
+  }
+
+  async function itemsByStatus() {
+    try {
+      const storedItems = await itemsStorage.getByStatus(filter);
+      setItems(storedItems);
+    } catch (error) {
+      console.log(error);
+      Alert.alert("Erro", "Não foi possível carregar os itens.");
+    }
+  }
+
+  useEffect(() => {
+    itemsByStatus();
+  }, [filter]);
 
   return (
     <View style={styles.container}>
@@ -46,8 +62,9 @@ export function Home() {
         <Input
           placeholder="O que você precisa comprar?"
           onChangeText={setDescription}
+          value={description}
         />
-        <Button title="Entrar" />
+        <Button title="Entrar" onPress={handleAdd} />
       </View>
 
       <View style={styles.content}>
@@ -67,7 +84,7 @@ export function Home() {
         </View>
 
         <FlatList
-          data={ITEMS}
+          data={items}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Item
